@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Amigo Invisible</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            font-family: "Poppins", Arial, sans-serif;
+            color: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+
+        h2, h3 {
+            text-align: center;
+            color: #fff;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            margin-top: 20px;
+            background: #00ffab;
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #00e09e;
+        }
+
+        .link {
+            background: rgba(255,255,255,0.8);
+            color: black;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .copy-btn {
+            background: #ffda44;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            margin-top: 5px;
+        }
+
+        .result-box {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>🎁 Generador de Amigo Invisible</h2>
+
+    <p>Escribe un participante por línea:</p>
+    <textarea id="nombres" rows="8" placeholder="Ejemplo:
+Ana
+Luis
+Pedro
+María"></textarea>
+
+    <button onclick="generar()">Generar enlaces secretos</button>
+
+    <div id="resultado" class="result-box"></div>
+
+</div>
+
+<script>
+// ------------------ CIFRADO ------------------ //
+function encriptar(texto) {
+    return btoa(encodeURIComponent(texto));
+}
+function desencriptar(texto) {
+    return decodeURIComponent(atob(texto));
+}
+
+// ------------------ GENERAR ------------------ //
+function generar() {
+    const nombres = document.getElementById("nombres")
+        .value.split("\n")
+        .map(n => n.trim())
+        .filter(n => n.length > 0);
+
+    if (nombres.length < 2) {
+        alert("Debe haber al menos 2 participantes.");
+        return;
+    }
+
+    let asignaciones = [...nombres];
+
+    // Mezclar
+    for (let i = asignaciones.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [asignaciones[i], asignaciones[j]] = [asignaciones[j], asignaciones[i]];
+    }
+
+    // Evitar permisos a sí mismo
+    for (let i = 0; i < nombres.length; i++) {
+        if (nombres[i] === asignaciones[i]) return generar();
+    }
+
+    let html = "<h3>Enlaces generados:</h3>";
+
+    nombres.forEach((persona, i) => {
+        const amigo = asignaciones[i];
+        const data = encriptar(persona + "|" + amigo);
+
+        const baseURL = window.location.origin + window.location.pathname;
+
+        const url = baseURL + "?id=" + data;
+
+        html += `
+            <div class="link">
+                <strong>${persona}:</strong><br>
+                <a href="${url}" target="_blank">${url}</a><br>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')">Copiar enlace</button>
+            </div>
+        `;
+    });
+
+    document.getElementById("resultado").innerHTML = html;
+}
+
+// ----------- MOSTRAR RESULTADO DESDE EL LINK ----------- //
+window.onload = function () {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    if (id) {
+        try {
+            const datos = desencriptar(id).split("|");
+            const nombre = datos[0];
+            const amigo = datos[1];
+
+            document.body.innerHTML = `
+                <div class="container">
+                    <h2>🎁 Amigo Invisible</h2>
+                    <h3>Hola <strong>${nombre}</strong>!</h3>
+                    <p>Tu amigo invisible es:</p>
+                    <h1 style="text-align:center; font-size:40px;">🎉 ${amigo} 🎉</h1>
+                </div>
+            `;
+        } catch {
+            document.body.innerHTML = "<h2>Error: enlace inválido o corrupto.</h2>";
+        }
+    }
+};
+</script>
+
+</body>
+</html>
